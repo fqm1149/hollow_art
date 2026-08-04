@@ -11,7 +11,8 @@
 
   let curPage = 1, loading = false;
   let view = localStorage.getItem('ha-v') || 'masonry';
-  const VH = () => window.innerHeight;
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
 
   async function init() {
     await API();
@@ -24,8 +25,6 @@
 
   // ===== 事件绑定 =====
   function bindEvents() {
-    const $ = s => document.querySelector(s);
-    const $$ = s => document.querySelectorAll(s);
 
     // 视图切换
     $('#ha-view-btn').onclick = () => {
