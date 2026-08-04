@@ -63,15 +63,12 @@
     return post;
   }
 
-  // ===== getComments: 用 hole/one 获取评论 =====
+  // ===== getComments: 用 comment/list 获取评论 =====
   async function getComments(pid, page = 1, limit = 50) {
-    // hole/one 的 list 字段包含评论
-    const data = await request(`${BASE}/hole/one`, { pid, comment_stream: 1 });
-    const allComments = (data.list || []).map(c => wrapComment(c));
-    // 简单分页（API 一次返回所有评论）
-    const start = (page - 1) * limit;
-    const comments = allComments.slice(start, start + limit);
-    return { comments, total: allComments.length, hasMore: start + limit < allComments.length };
+    const data = await request(`${BASE}/comment/list`, { pid, page, limit });
+    // data = { list: [comment, ...], total }
+    const comments = (data.list || []).map(c => wrapComment(c));
+    return { comments, total: data.total || 0, hasMore: comments.length === limit };
   }
 
   // ===== search =====
