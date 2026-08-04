@@ -173,20 +173,6 @@
     });
     c.appendChild(frag);
     loadFeedImgs();
-    // 瀑布流行高计算
-    if (view === 'masonry') requestAnimationFrame(calcMasonry);
-  }
-
-  // 瀑布流：根据内容高度设置 grid-row-end
-  function calcMasonry() {
-    if (view !== 'masonry') return;
-    $$('.ha-card').forEach(card => {
-      if (card.dataset.gridSet) return;
-      const h = card.offsetHeight;
-      const span = Math.ceil((h + 12) / 4); // 4px row-gap + 12px gap
-      card.style.gridRowEnd = `span ${span}`;
-      card.dataset.gridSet = '1';
-    });
   }
 
   async function loadFeedImgs() {
@@ -295,8 +281,8 @@
     </header>
     <div class="ha-d-layout">
       <div class="ha-d-left">
-        <div class="ha-d-fs-row"><button class="ha-d-fs-btn" title="全屏">⛶</button></div>
         <div class="ha-d-content">
+          <button class="ha-d-fs-btn" title="全屏">⛶</button>
           <div class="ha-d-content-inner">
             <div class="ha-d-text">${esc(post.content)}</div>
             <div class="ha-d-imgs" id="ha-d-imgs"></div>
@@ -374,9 +360,9 @@
 
     /* feed */
     .ha-feed{flex:1;overflow-y:auto;padding:16px 20px}
-    .ha-feed.ha-masonry{display:grid;grid-template-columns:repeat(var(--ha-cols,3),1fr);grid-auto-rows:4px;gap:12px;align-items:start}
-    .ha-feed:not(.ha-masonry){display:grid;grid-template-columns:1fr;gap:12px;max-width:700px;margin:0 auto}
-    .ha-card{background:var(--ha-card);border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .15s}
+    .ha-masonry{columns:var(--ha-cols,3);column-gap:12px}
+    .ha-masonry .ha-card{break-inside:avoid}
+    .ha-card{background:var(--ha-card);border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .15s}
     .ha-card:hover{box-shadow:var(--ha-hover)}
     .ha-card-hd{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
     .ha-pid{font-weight:700;color:var(--ha-accent);font-size:14px}
@@ -407,11 +393,10 @@
     .ha-d-layout{flex:1;display:flex;overflow:hidden}
     .ha-d-left{flex:0 0 44%;max-width:44%;overflow-y:auto;padding:24px;border-right:1px solid var(--ha-border);background:var(--ha-card)}
     .ha-d-right{flex:1;overflow-y:auto;padding:24px;background:var(--ha-bg)}
-    /* 全屏按钮移到内容区外部 */
-    .ha-d-content{background:var(--ha-card);border-radius:10px;border:1px solid var(--ha-border);overflow:hidden}
-    .ha-d-fs-row{display:flex;justify-content:flex-end;margin-bottom:6px}
-    .ha-d-fs-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ha-border);border-radius:6px;background:var(--ha-card);cursor:pointer;font-size:16px;color:var(--ha-sub);transition:all .12s}
-    .ha-d-fs-btn:hover{background:var(--ha-bg);color:var(--ha-text)}
+    .ha-d-content{position:relative;background:var(--ha-card);border-radius:10px;border:1px solid var(--ha-border);overflow:hidden}
+    .ha-d-content-inner{max-height:calc(100vh - 340px);overflow-y:auto;padding:20px}
+    .ha-d-fs-btn{position:absolute;top:8px;right:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;background:rgba(0,0,0,.06);cursor:pointer;font-size:16px;z-index:2;transition:background .12s}
+    .ha-d-fs-btn:hover{background:rgba(0,0,0,.12)}
     .ha-d-text{font-size:16px;line-height:1.8;color:var(--ha-text);white-space:pre-wrap;word-break:break-word}
     .ha-d-imgs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     .ha-d-imgs img{max-width:220px;max-height:220px;border-radius:8px;cursor:pointer;object-fit:cover;transition:transform .12s}
@@ -433,8 +418,8 @@
     .ha-cmt-bd{font-size:14px;color:var(--ha-text);line-height:1.55}
     .ha-cmt-load{text-align:center;padding:18px;color:var(--ha-muted);font-size:13px}
 
-    @media(max-width:900px){.ha-d-layout{flex-direction:column}.ha-d-left{flex:none;max-width:100%;border-right:none;border-bottom:1px solid var(--ha-border);max-height:50vh}.ha-cmt-grid{columns:1}.ha-feed.ha-masonry{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:600px){.ha-feed.ha-masonry{grid-template-columns:1fr!important}.ha-d-left,.ha-d-right{padding:16px}}
+    @media(max-width:900px){.ha-d-layout{flex-direction:column}.ha-d-left{flex:none;max-width:100%;border-right:none;border-bottom:1px solid var(--ha-border);max-height:50vh}.ha-cmt-grid{columns:1}}
+    @media(max-width:600px){.ha-masonry{columns:1!important}.ha-d-left,.ha-d-right{padding:16px}}
   `;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
