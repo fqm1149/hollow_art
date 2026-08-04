@@ -1,222 +1,103 @@
 /**
- * Hollow Art - 样式
+ * Hollow Art - 样式 v0.2
  */
 
-/* ===== 全局 ===== */
 #hollow-art {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
   background: #f5f5f5;
   z-index: 999999;
   overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ===== 头部 ===== */
 .ha-header {
-  position: sticky;
-  top: 0;
+  position: sticky; top: 0;
   background: #fff;
-  padding: 16px 24px;
+  padding: 12px 24px;
   border-bottom: 1px solid #e0e0e0;
-  display: flex;
-  align-items: center;
-  gap: 24px;
+  display: flex; align-items: center; gap: 20px;
   z-index: 10;
 }
-
-.ha-header h1 {
-  font-size: 20px;
-  margin: 0;
-  color: #333;
-}
-
-.ha-nav {
-  display: flex;
-  gap: 8px;
-}
-
+.ha-header h1 { font-size: 18px; margin: 0; color: #333; white-space: nowrap; }
+.ha-nav { display: flex; gap: 6px; }
 .ha-btn {
-  padding: 6px 16px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+  padding: 5px 14px; border: 1px solid #ddd; border-radius: 16px;
+  background: #fff; cursor: pointer; font-size: 13px; transition: all 0.15s;
 }
-
-.ha-btn:hover {
-  border-color: #4CAF50;
-  color: #4CAF50;
-}
-
-.ha-btn.ha-active {
-  background: #4CAF50;
-  color: #fff;
-  border-color: #4CAF50;
-}
-
-.ha-search {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-}
-
+.ha-btn:hover { border-color: #4CAF50; color: #4CAF50; }
+.ha-btn.ha-active { background: #4CAF50; color: #fff; border-color: #4CAF50; }
+.ha-search { margin-left: auto; display: flex; gap: 6px; }
 .ha-search input {
-  padding: 6px 12px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  width: 200px;
-  font-size: 14px;
+  padding: 5px 12px; border: 1px solid #ddd; border-radius: 16px;
+  width: 180px; font-size: 13px; outline: none;
 }
-
+.ha-search input:focus { border-color: #4CAF50; }
 .ha-search button {
-  padding: 6px 16px;
-  background: #4CAF50;
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
+  padding: 5px 14px; background: #4CAF50; color: #fff; border: none;
+  border-radius: 16px; cursor: pointer; font-size: 13px;
 }
 
 /* ===== 内容 ===== */
-.ha-content {
-  max-width: 800px;
-  margin: 24px auto;
-  padding: 0 16px;
-}
+.ha-content { max-width: 760px; margin: 20px auto; padding: 0 12px; }
 
-/* ===== 帖子 ===== */
+/* ===== 帖子卡片 ===== */
 .ha-post {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  cursor: pointer;
-  transition: box-shadow 0.2s;
+  background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer;
+  transition: box-shadow 0.15s; will-change: transform;
 }
+.ha-post:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.1); }
 
-.ha-post:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-}
-
-.ha-post-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.ha-pid {
-  font-weight: 600;
-  color: #4CAF50;
-}
-
-.ha-time {
-  color: #999;
-  font-size: 13px;
-}
-
+.ha-post-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ha-pid { font-weight: 600; color: #4CAF50; font-size: 14px; }
+.ha-time { color: #999; font-size: 12px; }
 .ha-tag {
-  padding: 2px 8px;
-  background: #e8f5e9;
-  color: #4CAF50;
-  border-radius: 10px;
-  font-size: 12px;
+  padding: 1px 7px; background: #e8f5e9; color: #4CAF50;
+  border-radius: 8px; font-size: 11px;
 }
-
-.ha-tag.ha-top {
-  background: #fff3e0;
-  color: #ff9800;
-}
+.ha-tag.ha-top { background: #fff3e0; color: #ff9800; }
+.ha-tag.ha-lz { background: #e3f2fd; color: #1976d2; }
 
 .ha-post-content {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #333;
-  white-space: pre-wrap;
-  word-break: break-word;
+  font-size: 14px; line-height: 1.6; color: #333;
+  white-space: pre-wrap; word-break: break-word;
 }
 
-.ha-post-images {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-
+/* ===== 图片 ===== */
+.ha-post-images { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 .ha-image {
-  max-width: 200px;
-  max-height: 200px;
-  border-radius: 8px;
-  object-fit: cover;
+  max-width: 180px; max-height: 180px; border-radius: 6px;
+  object-fit: cover; background: #f0f0f0;
 }
 
+/* ===== 统计 ===== */
 .ha-post-footer {
-  display: flex;
-  gap: 16px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  display: flex; gap: 16px; margin-top: 10px;
+  padding-top: 10px; border-top: 1px solid #f5f5f5;
 }
+.ha-stat { color: #888; font-size: 13px; }
 
-.ha-stat {
-  color: #666;
-  font-size: 14px;
-}
-
-/* ===== 评论 ===== */
-.ha-post-comments {
-  margin-top: 12px;
-}
-
+/* ===== 评论区 ===== */
+.ha-post-comments { margin-top: 10px; }
 .ha-comment {
-  padding: 10px 12px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  margin-top: 8px;
+  padding: 8px 10px; background: #fafafa; border-radius: 6px;
+  margin-top: 6px; border-left: 3px solid #e0e0e0;
+}
+.ha-comment-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.ha-comment-user { font-weight: 500; color: #4CAF50; font-size: 13px; }
+.ha-comment-time { color: #999; font-size: 11px; }
+.ha-comment-content { font-size: 13px; color: #444; line-height: 1.5; }
+
+.ha-comment-loading, .ha-comment-empty, .ha-comment-error {
+  text-align: center; padding: 12px; color: #999; font-size: 13px;
 }
 
-.ha-comment-user {
-  font-weight: 500;
-  color: #4CAF50;
-  margin-right: 8px;
-}
-
-.ha-comment-time {
-  color: #999;
-  font-size: 12px;
-}
-
-.ha-comment-content {
-  margin-top: 4px;
-  font-size: 14px;
-  color: #333;
-}
-
-/* ===== 状态 ===== */
-.ha-loading, .ha-error {
-  text-align: center;
-  padding: 40px;
-  color: #999;
-}
-
-.ha-error {
-  color: #f44336;
-}
-
-.ha-load-more {
-  text-align: center;
-  padding: 16px;
-  color: #4CAF50;
-  cursor: pointer;
-}
-
-.ha-load-more:hover {
-  text-decoration: underline;
-}
+/* ===== 加载状态 ===== */
+.ha-loading, .ha-error { text-align: center; padding: 40px; color: #999; }
+.ha-error { color: #f44336; }
+.ha-load-more { text-align: center; padding: 14px; color: #4CAF50; cursor: pointer; font-size: 14px; }
+.ha-load-more:hover { text-decoration: underline; }
