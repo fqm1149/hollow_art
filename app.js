@@ -281,8 +281,11 @@
     </header>
     <div class="ha-d-layout">
       <div class="ha-d-left">
-        <div class="ha-d-content">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
           <button class="ha-d-fs-btn" title="全屏">⛶</button>
+          <span style="color:var(--ha-muted);font-size:13px">全屏查看</span>
+        </div>
+        <div class="ha-d-content">
           <div class="ha-d-content-inner">
             <div class="ha-d-text">${esc(post.content)}</div>
             <div class="ha-d-imgs" id="ha-d-imgs"></div>
@@ -392,11 +395,11 @@
     .ha-detail-tm{color:var(--ha-muted);font-size:13px;margin-left:auto}
     .ha-d-layout{flex:1;display:flex;overflow:hidden}
     .ha-d-left{flex:0 0 44%;max-width:44%;overflow-y:auto;padding:24px;border-right:1px solid var(--ha-border);background:var(--ha-card)}
-    .ha-d-right{flex:1;overflow-y:auto;padding:24px;background:var(--ha-bg)}
-    .ha-d-content{position:relative;background:var(--ha-card);border-radius:10px;border:1px solid var(--ha-border);overflow:hidden}
+    .ha-d-right{flex:1;overflow-y:auto;padding:24px;background:var(--ha-bg);display:flex;flex-direction:column}
+    .ha-d-content{background:var(--ha-card);border-radius:10px;border:1px solid var(--ha-border);overflow:hidden}
     .ha-d-content-inner{max-height:calc(100vh - 340px);overflow-y:auto;padding:20px}
-    .ha-d-fs-btn{position:absolute;top:8px;right:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;background:rgba(0,0,0,.06);cursor:pointer;font-size:16px;z-index:2;transition:background .12s}
-    .ha-d-fs-btn:hover{background:rgba(0,0,0,.12)}
+    .ha-d-fs-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid var(--ha-border);border-radius:5px;background:var(--ha-card);cursor:pointer;font-size:14px;color:var(--ha-sub);transition:all .12s;flex-shrink:0}
+    .ha-d-fs-btn:hover{background:var(--ha-bg);color:var(--ha-text)}
     .ha-d-text{font-size:16px;line-height:1.8;color:var(--ha-text);white-space:pre-wrap;word-break:break-word}
     .ha-d-imgs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     .ha-d-imgs img{max-width:220px;max-height:220px;border-radius:8px;cursor:pointer;object-fit:cover;transition:transform .12s}
@@ -405,8 +408,8 @@
     .ha-d-meta-row{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;color:var(--ha-sub);border-bottom:1px solid var(--ha-border)}
     .ha-d-meta-row:last-child{border-bottom:none}
     .ha-d-r-hd{font-size:16px;font-weight:600;color:var(--ha-text);padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--ha-border)}
-    .ha-cmt-grid{columns:2;column-gap:12px}
-    .ha-cmt{background:var(--ha-card);border-radius:8px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);break-inside:avoid;border-left:3px solid var(--ha-border)}
+    .ha-cmt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .ha-cmt{background:var(--ha-card);border-radius:8px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--ha-border)}
     .ha-cmt-lz{border-left-color:var(--ha-accent)}
     .ha-cmt-hd{display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap}
     .ha-cmt-id{font-weight:700;color:var(--ha-muted);font-size:11px;font-family:monospace}
@@ -418,7 +421,7 @@
     .ha-cmt-bd{font-size:14px;color:var(--ha-text);line-height:1.55}
     .ha-cmt-load{text-align:center;padding:18px;color:var(--ha-muted);font-size:13px}
 
-    @media(max-width:900px){.ha-d-layout{flex-direction:column}.ha-d-left{flex:none;max-width:100%;border-right:none;border-bottom:1px solid var(--ha-border);max-height:50vh}.ha-cmt-grid{columns:1}}
+    @media(max-width:900px){.ha-d-layout{flex-direction:column}.ha-d-left{flex:none;max-width:100%;border-right:none;border-bottom:1px solid var(--ha-border);max-height:50vh}.ha-cmt-grid{grid-template-columns:1fr}}
     @media(max-width:600px){.ha-masonry{columns:1!important}.ha-d-left,.ha-d-right{padding:16px}}
   `;
 
