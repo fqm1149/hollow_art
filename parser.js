@@ -55,6 +55,26 @@
     return { posts, total: data.total || 0, page, hasMore: posts.length === limit };
   }
 
+  // ===== getFollowed: 获取关注的帖子 =====
+  async function getFollowed(page = 1, limit = 10) {
+    const data = await request(`${BASE}/hole/list_comments`, {
+      page, limit, comment_limit: 0, is_follow: 1, comment_stream: 1
+    });
+    const items = data.list || [];
+    const posts = items.map(h => wrapHole(h));
+    return { posts, total: data.total || 0, page, hasMore: posts.length === limit };
+  }
+
+  // ===== getBounty: 获取悬赏帖子 =====
+  async function getBounty(page = 1, limit = 10) {
+    const data = await request(`${BASE}/hole/list_comments`, {
+      page, limit, comment_limit: 0, reward: 1, comment_stream: 1
+    });
+    const items = data.list || [];
+    const posts = items.map(h => wrapHole(h));
+    return { posts, total: data.total || 0, page, hasMore: posts.length === limit };
+  }
+
   // ===== getPost: hole/one 返回 {hole, list} =====
   async function getPost(pid) {
     const data = await request(`${BASE}/hole/one`, { pid, comment_stream: 1 });
@@ -229,11 +249,11 @@
   }
 
   window.TreeholeAPI = {
-    getPosts, getPost, getComments, search,
+    getPosts, getPost, getComments, search, getFollowed, getBounty,
     getImage, getThumbnail, getImages,
     getTags, getNavigation, getUserConfig, getBookmarks,
     getUnreadMessages, getExclusiveIds, getBlockingWords, getReminders, getUserInfo,
-    version: '6.1.0'
+    version: '7.0.0'
   };
-  console.log('[Treehole Parser v6.1] Loaded - Image support added');
+  console.log('[Treehole Parser v7.0] Loaded - Follow/Bookmark support');
 })();
