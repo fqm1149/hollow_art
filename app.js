@@ -10,6 +10,7 @@
   });
 
   let curPage = 1, loading = false;
+  let curTab = 'latest'; // 'latest' | 'followed' | 'bounty'
   let view = localStorage.getItem('ha-v') || 'masonry';
   let cols = parseInt(localStorage.getItem('ha-cols') || '3');
   let cmtCols = parseInt(localStorage.getItem('ha-cmt-cols') || '2');
@@ -25,7 +26,7 @@
     document.head.insertAdjacentHTML('beforeend', `<style>${CSS}</style>`);
     document.body.insertAdjacentHTML('beforeend', buildHTML());
     bindEvents();
-    loadPosts(1);
+    loadTabPosts(1);
   }
 
   // ===== 主题 =====
@@ -42,7 +43,9 @@
       if (tab) {
         $$('.ha-tab').forEach(x => x.classList.remove('ha-on'));
         tab.classList.add('ha-on');
-        curPage = 1; loadPosts(1);
+        curTab = tab.dataset.tab;
+        curPage = 1;
+        loadTabPosts(1);
       }
     });
 
@@ -127,7 +130,16 @@
     $('#ha-search').value = '';
     $$('.ha-tab').forEach(x => x.classList.remove('ha-on'));
     $('.ha-tab').classList.add('ha-on');
-    curPage = 1; loadPosts(1);
+    curTab = 'latest';
+    curPage = 1;
+    loadTabPosts(1);
+  }
+
+  // ===== 按 Tab 加载 =====
+  async function loadTabPosts(page) {
+    if (curTab === 'followed') return loadFollowed(page);
+    if (curTab === 'bounty') return loadBounty(page);
+    return loadPosts(page);
   }
 
   // ===== 加载 =====
@@ -146,9 +158,47 @@
     loading = false;
   }
 
+  async function loadFollowed(page) {
+    if (loading) return; loading = true;
+    const c = $('#ha-feed');
+    if (!c) { loading = false; return; }
+    if (page === 1) c.innerHTML = '<div class="ha-msg">加载中...</div>';
+    try {
+      const { posts, hasMore } = await TreeholeAPI.getFollowed(page, 15);
+      if (page === 1) c.innerHTML = '';
+      if (posts.length === 0 && page === 1) {
+        c.innerHTML = '<div class="ha-msg">还没有关注的帖子</div>';
+      } else {
+        renderFeed(posts);
+        curPage = page;
+        if (hasMore) c.insertAdjacentHTML('beforeend', '<div class="ha-more">加载更多</div>');
+      }
+    } catch (e) { c.innerHTML = `<div class="ha-msg ha-err">${e.message}</div>`; }
+    loading = false;
+  }
+
+  async function loadBounty(page) {
+    if (loading) return; loading = true;
+    const c = $('#ha-feed');
+    if (!c) { loading = false; return; }
+    if (page === 1) c.innerHTML = '<div class="ha-msg">加载中...</div>';
+    try {
+      const { posts, hasMore } = await TreeholeAPI.getBounty(page, 15);
+      if (page === 1) c.innerHTML = '';
+      if (posts.length === 0 && page === 1) {
+        c.innerHTML = '<div class="ha-msg">暂无悬赏帖子</div>';
+      } else {
+        renderFeed(posts);
+        curPage = page;
+        if (hasMore) c.insertAdjacentHTML('beforeend', '<div class="ha-more">加载更多</div>');
+      }
+    } catch (e) { c.innerHTML = `<div class="ha-msg ha-err">${e.message}</div>`; }
+    loading = false;
+  }
+
   async function loadMore() {
     $('.ha-more')?.remove();
-    await loadPosts(curPage + 1);
+    await loadTabPosts(curPage + 1);
   }
 
   async function searchPosts(q) {
@@ -345,9 +395,9 @@
       <header id="ha-header">
         <h1>🌳 Hollow Art</h1>
         <nav>
-          <button class="ha-tab ha-on">最新</button>
-          <button class="ha-tab">关注</button>
-          <button class="ha-tab">悬赏</button>
+          <button class="ha-tab ha-on" data-tab="latest">最新</button>
+          <button class="ha-tab" data-tab="followed">关注</button>
+          <button class="ha-tab" data-tab="bounty">悬赏</button>
         </nav>
         <button id="ha-view-btn" title="切换视图"><span id="ha-view-icon">${view === 'masonry' ? '▦' : '▤'}</span></button>
         <div class="ha-tool" title="栏数 (${cols})"><input type="range" id="ha-cols" min="1" max="5" value="${cols}"><span id="ha-cols-val">${cols}</span></div>

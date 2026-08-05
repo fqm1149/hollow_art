@@ -104,7 +104,6 @@
   async function getTags() { return await request(`${BASE}/tags/tree`); }
   async function getNavigation() { return await request(`${BASE}/navigation-items/list`, { page: 1, limit: 1000 }); }
   async function getUserConfig(type = 2) { return await request(`${BASE}/user_config/get`, { type }); }
-  async function getBookmarks(page = 1, limit = 60) { return await request(`${BASE}/bookmark/list`, { page, limit }); }
   async function getUnreadMessages(type = 'int_msg') { return await request(`${BASE}/message/un_read`, { message_type: type }); }
   async function getExclusiveIds() { return await request(`${BASE}/exclusive_id/list`); }
   async function getBlockingWords() { return await request(`${BASE}/person_blocking_words/index`); }
@@ -251,9 +250,9 @@
   window.TreeholeAPI = {
     getPosts, getPost, getComments, search, getFollowed, getBounty,
     getImage, getThumbnail, getImages,
-    getTags, getNavigation, getUserConfig, getBookmarks,
+    getTags, getNavigation, getUserConfig,
     getUnreadMessages, getExclusiveIds, getBlockingWords, getReminders, getUserInfo,
-    version: '7.0.0'
+    version: '7.1.0'
   };
-  console.log('[Treehole Parser v7.0] Loaded - Follow/Bookmark support');
+  console.log('[Treehole Parser v7.1] Loaded');
 })();
