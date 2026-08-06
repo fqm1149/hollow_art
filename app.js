@@ -267,7 +267,6 @@
         <div class="ha-card-ft">
           <span>💬 ${post.comment_num}</span>
           <span>⭐ ${post.like_num}</span>
-          <span>🔄 ${post.share_num}</span>
         </div>`;
       el.onclick = e => { if (!e.target.closest('.ha-img')) openDetail(post); };
       frag.appendChild(el);
@@ -454,7 +453,6 @@
           <div class="ha-d-meta-row"><span>发布时间</span><span>${post.timestamp ? new Date(post.timestamp).toLocaleString('zh-CN') : post.time}</span></div>
           <div class="ha-d-meta-row"><span>💬 评论</span><span>${post.comment_num}</span></div>
           <div class="ha-d-meta-row"><span>⭐ 收藏</span><span>${post.like_num}</span></div>
-          <div class="ha-d-meta-row"><span>🔄 转发</span><span>${post.share_num}</span></div>
           <div class="ha-d-meta-row"><span>PID</span><span>${post.pid}</span></div>
         </div>
       </div>

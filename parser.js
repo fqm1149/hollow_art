@@ -122,7 +122,7 @@
       like_num: h.likenum || 0,
       tread_num: h.tread_num || 0,
       comment_num: h.reply || h.comment_total || 0,
-      share_num: h.extra || 0,
+      extra: h.extra || 0,
       tags: parseTags(h.tags_info, h.tags_ids),
       images: parseMediaIds(h.media_ids),
       anonymous: h.anonymous === 1,
