@@ -414,10 +414,10 @@
     // 返回按钮（栈式返回）
     detail.querySelector('.ha-back').onclick = () => {
       if (postStack.length > 0) {
-        // 返回上一个帖子
+        // 返回上一个帖子（不入栈）
         const prevPid = postStack.pop();
         detail.remove();
-        TreeholeAPI.getPost(prevPid).then(p => openDetail(p, true));
+        TreeholeAPI.getPost(prevPid).then(p => openDetail(p, false));
       } else {
         // 返回首页
         detail.style.opacity = '0';
