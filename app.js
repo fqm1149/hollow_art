@@ -114,6 +114,13 @@
     $('#ha-search-btn').onclick = doSearch;
   }
 
+  async function searchPosts(q) {
+    searchMode = true;
+    searchQuery = q;
+    curPage = 1;
+    await loadSearchResults(1);
+  }
+
   function updateFeedClass() {
     const feed = $('#ha-feed');
     if (!feed) return;
