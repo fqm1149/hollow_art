@@ -294,6 +294,27 @@
     requestAnimationFrame(() => lb.classList.add('on'));
   }
 
+  // ===== 智能定位预览浮窗 =====
+  function positionPreview(preview, mouseX, mouseY) {
+    const PW = 320, PH = 150; // 预估浮窗尺寸
+    const VW = window.innerWidth, VH = window.innerHeight;
+    let x = mouseX + 12, y = mouseY - PH - 8; // 默认在鼠标上方
+
+    // 上方放不下 → 放下方
+    if (y < 0) y = mouseY + 16;
+    // 右边放不下 → 左移
+    if (x + PW > VW) x = VW - PW - 12;
+    // 左边放不下 → 右移
+    if (x < 0) x = 12;
+    // 下方放不下 → 上移
+    if (y + PH > VH) y = VH - PH - 12;
+
+    preview.style.position = 'fixed';
+    preview.style.left = x + 'px';
+    preview.style.top = y + 'px';
+    preview.style.zIndex = '99999999';
+  }
+
   // ===== 帖号引用检测器 =====
   function linkifyRefs(text) {
     return text.replace(/#(\d{7})/g, '<span class="ha-ref" data-pid="$1">#$1</span>');
@@ -301,6 +322,12 @@
 
   // 事件委托：统一处理引用的悬停和点击
   function initRefHandlers() {
+    let lastMouseX = 0, lastMouseY = 0;
+    document.addEventListener('mousemove', e => {
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    });
+
     // 悬停预览
     document.addEventListener('mouseenter', e => {
       const ref = e.target.closest('.ha-ref');
@@ -318,8 +345,10 @@
             </div>
             <div class="ha-ref-preview-bd">${esc(post.content?.substring(0, 200))}</div>
             <div class="ha-ref-preview-cmt">💬 ${post.comment_num} ⭐ ${post.like_num}</div>`;
-          ref.appendChild(preview);
+          document.body.appendChild(preview);
           ref._preview = preview;
+          // 智能定位
+          positionPreview(preview, lastMouseX, lastMouseY);
         } catch (e) {}
       }, 300);
     }, true);
@@ -646,7 +675,7 @@
     /* 帖号引用 */
     .ha-ref{color:var(--ha-accent);font-weight:600;cursor:pointer;position:relative;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
     .ha-ref:hover{color:var(--ha-accent);text-decoration-style:solid}
-    .ha-ref-preview{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:320px;background:var(--ha-card);border:1px solid var(--ha-border);border-radius:8px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.15);z-index:99999;pointer-events:none;animation:haFadeUp .15s ease-out}
+    .ha-ref-preview{position:fixed;width:320px;background:var(--ha-card);border:1px solid var(--ha-border);border-radius:8px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.15);z-index:99999999;pointer-events:none;animation:haFadeUp .15s ease-out}
     .ha-ref-preview-hd{display:flex;align-items:center;gap:6px;margin-bottom:6px}
     .ha-ref-preview-bd{font-size:13px;line-height:1.5;color:var(--ha-text);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
     .ha-ref-preview-cmt{font-size:11px;color:var(--ha-muted);margin-top:6px}
