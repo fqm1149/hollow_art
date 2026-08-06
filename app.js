@@ -43,9 +43,11 @@
       if (entries[0].isIntersecting && !loading) loadMore();
     }, { rootMargin: '0px 0px 200px 0px' });
 
-    // 鼠标滚轮映射水平滚动（瀑布流模式）
+    // 鼠标滚轮映射水平滚动（仅首页瀑布流模式）
     document.addEventListener('wheel', e => {
       if (view !== 'masonry') return;
+      // 只在首页 feed 区域生效，不在详情页生效
+      if (document.getElementById('ha-detail')) return;
       const feed = $('#ha-feed');
       if (!feed || feed.scrollWidth <= feed.clientWidth) return;
       e.preventDefault();
