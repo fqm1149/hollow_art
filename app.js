@@ -70,6 +70,9 @@
         $$('.ha-tab').forEach(x => x.classList.remove('ha-on'));
         tab.classList.add('ha-on');
         curTab = tab.dataset.tab;
+        searchMode = false;
+        searchQuery = '';
+        $('#ha-search').value = '';
         curPage = 1;
         loadTabPosts(1);
       }
