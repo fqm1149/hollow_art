@@ -1,6 +1,6 @@
 /**
- * Hollow Art v0.8.0
- * 整改版：IntersectionObserver + 微交互 + 状态隔离 + 骨架屏
+ * Hollow Art v0.9.0
+ * 评论拓扑视图 + 帖号引用检测器
  */
 (function() {
   'use strict';
@@ -17,10 +17,12 @@
   let accent = localStorage.getItem('ha-accent') || '#4CAF50';
   let dark = localStorage.getItem('ha-dark') === '1';
 
+  // 帖子栈（用于引用跳转）
+  let postStack = [];
+
   const $ = s => document.querySelector(s);
   const $$ = s => document.querySelectorAll(s);
 
-  // ===== IntersectionObserver (任务1) =====
   let feedObserver = null;
 
   async function init() {
@@ -38,16 +40,13 @@
     document.documentElement.classList.toggle('ha-dark', dark);
   }
 
-  // ===== 任务1: IntersectionObserver 替代 setTimeout =====
   function initFeedObserver() {
     feedObserver = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && !loading) loadMore();
     }, { rootMargin: '0px 0px 200px 0px' });
 
-    // 鼠标滚轮映射水平滚动（仅首页瀑布流模式）
     document.addEventListener('wheel', e => {
       if (view !== 'masonry') return;
-      // 只在首页 feed 区域生效，不在详情页生效
       if (document.getElementById('ha-detail')) return;
       const feed = $('#ha-feed');
       if (!feed || feed.scrollWidth <= feed.clientWidth) return;
@@ -63,7 +62,6 @@
   }
 
   function bindEvents() {
-    // Tab
     document.addEventListener('click', e => {
       const tab = e.target.closest('.ha-tab');
       if (tab) {
@@ -78,7 +76,6 @@
       }
     });
 
-    // 视图
     $('#ha-view-btn').onclick = () => {
       view = view === 'masonry' ? 'single' : 'masonry';
       localStorage.setItem('ha-v', view);
@@ -86,7 +83,6 @@
       updateFeedClass();
     };
 
-    // 栏数
     $('#ha-cols').oninput = e => {
       cols = parseInt(e.target.value);
       localStorage.setItem('ha-cols', cols);
@@ -94,14 +90,12 @@
       updateFeedClass();
     };
 
-    // 主题色
     $('#ha-accent').oninput = e => {
       accent = e.target.value;
       localStorage.setItem('ha-accent', accent);
       applyTheme();
     };
 
-    // 暗色
     $('#ha-dark-btn').onclick = () => {
       dark = !dark;
       localStorage.setItem('ha-dark', dark ? '1' : '0');
@@ -109,7 +103,6 @@
       $('#ha-dark-btn').textContent = dark ? '☀' : '🌙';
     };
 
-    // 搜索
     const si = $('#ha-search');
     const doSearch = () => {
       const q = si.value.trim();
@@ -135,10 +128,10 @@
     searchMode = false;
     searchQuery = '';
     curPage = 1;
+    postStack = [];
     loadTabPosts(1);
   }
 
-  // ===== Tab 路由 =====
   async function loadTabPosts(page) {
     if (searchMode) return loadSearchResults(page);
     if (curTab === 'followed') return loadFollowed(page);
@@ -166,7 +159,6 @@
     loading = false;
   }
 
-  // ===== 任务3: 入场动画 + 任务5: 骨架屏 =====
   function skeleton(n = 6) {
     return Array(n).fill('<div class="ha-skeleton"><div class="sk-line"></div><div class="sk-line sk-short"></div><div class="sk-line sk-tiny"></div></div>').join('');
   }
@@ -195,13 +187,8 @@
     try {
       const { posts, hasMore } = await TreeholeAPI.getFollowed(page, 15);
       if (page === 1) c.innerHTML = '';
-      if (posts.length === 0 && page === 1) {
-        c.innerHTML = '<div class="ha-msg">还没有关注的帖子</div>';
-      } else {
-        renderFeed(posts);
-        curPage = page;
-        insertSentinel(c, hasMore);
-      }
+      if (posts.length === 0 && page === 1) c.innerHTML = '<div class="ha-msg">还没有关注的帖子</div>';
+      else { renderFeed(posts); curPage = page; insertSentinel(c, hasMore); }
       c.style.opacity = '1';
     } catch (e) { c.innerHTML = `<div class="ha-msg ha-err">${e.message}</div>`; c.style.opacity = '1'; }
     loading = false;
@@ -215,13 +202,8 @@
     try {
       const { posts, hasMore } = await TreeholeAPI.getBounty(page, 15);
       if (page === 1) c.innerHTML = '';
-      if (posts.length === 0 && page === 1) {
-        c.innerHTML = '<div class="ha-msg">暂无悬赏帖子</div>';
-      } else {
-        renderFeed(posts);
-        curPage = page;
-        insertSentinel(c, hasMore);
-      }
+      if (posts.length === 0 && page === 1) c.innerHTML = '<div class="ha-msg">暂无悬赏帖子</div>';
+      else { renderFeed(posts); curPage = page; insertSentinel(c, hasMore); }
       c.style.opacity = '1';
     } catch (e) { c.innerHTML = `<div class="ha-msg ha-err">${e.message}</div>`; c.style.opacity = '1'; }
     loading = false;
@@ -240,54 +222,13 @@
     await loadTabPosts(curPage + 1);
   }
 
-  async function searchPosts(q) {
-    searchMode = true;
-    searchQuery = q;
-    curPage = 1;
-    await loadSearchResults(1);
-  }
-
-  // ===== 任务3: Stagger 入场动画 =====
-  function renderFeed(posts) {
-    const c = $('#ha-feed');
-    const frag = document.createDocumentFragment();
-    posts.forEach((post, i) => {
-      const el = document.createElement('div');
-      el.className = 'ha-card';
-      el.dataset.pid = post.pid;
-      el.style.animationDelay = `${i * 30}ms`;
-      const imgs = post.images.length > 0
-        ? `<div class="ha-imgs" data-ids='${JSON.stringify(post.images.map(im=>im.id))}'></div>` : '';
-      el.innerHTML = `
-        <div class="ha-card-hd">
-          <span class="ha-pid">#${post.pid}</span>
-          <span class="ha-tm">${post.time}</span>
-          ${post.is_top ? '<span class="ha-tag ha-top">置顶</span>' : ''}
-          ${post.tags.map(t => `<span class="ha-tag">${esc(t)}</span>`).join('')}
-        </div>
-        <div class="ha-card-bd">${esc(post.content)}</div>
-        ${imgs}
-        <div class="ha-card-ft">
-          <span>💬 ${post.comment_num}</span>
-          <span>⭐ ${post.like_num}</span>
-        </div>`;
-      el.onclick = e => { if (!e.target.closest('.ha-img')) openDetail(post); };
-      frag.appendChild(el);
-    });
-    c.appendChild(frag);
-    loadFeedImgs();
-  }
-
-  // ===== 任务5: 图片懒加载 =====
+  // ===== 图片懒加载 =====
   let imgObserver = null;
   function initImgObserver() {
     if (imgObserver) return;
     imgObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          loadSingleImg(entry.target);
-          imgObserver.unobserve(entry.target);
-        }
+        if (entry.isIntersecting) { loadSingleImg(entry.target); imgObserver.unobserve(entry.target); }
       });
     }, { rootMargin: '200px' });
   }
@@ -309,9 +250,37 @@
 
   function loadFeedImgs() {
     initImgObserver();
-    document.querySelectorAll('.ha-imgs:not([data-d])').forEach(el => {
-      imgObserver.observe(el);
+    document.querySelectorAll('.ha-imgs:not([data-d])').forEach(el => imgObserver.observe(el));
+  }
+
+  function renderFeed(posts) {
+    const c = $('#ha-feed');
+    const frag = document.createDocumentFragment();
+    posts.forEach((post, i) => {
+      const el = document.createElement('div');
+      el.className = 'ha-card';
+      el.dataset.pid = post.pid;
+      el.style.animationDelay = `${i * 30}ms`;
+      const imgs = post.images.length > 0
+        ? `<div class="ha-imgs" data-ids='${JSON.stringify(post.images.map(im=>im.id))}'></div>` : '';
+      el.innerHTML = `
+        <div class="ha-card-hd">
+          <span class="ha-pid">#${post.pid}</span>
+          <span class="ha-tm">${post.time}</span>
+          ${post.is_top ? '<span class="ha-tag ha-top">置顶</span>' : ''}
+          ${post.tags.map(t => `<span class="ha-tag">${esc(t)}</span>`).join('')}
+        </div>
+        <div class="ha-card-bd">${linkifyRefs(esc(post.content))}</div>
+        ${imgs}
+        <div class="ha-card-ft">
+          <span>💬 ${post.comment_num}</span>
+          <span>⭐ ${post.like_num}</span>
+        </div>`;
+      el.onclick = e => { if (!e.target.closest('.ha-img') && !e.target.closest('.ha-ref')) openDetail(post); };
+      frag.appendChild(el);
     });
+    c.appendChild(frag);
+    loadFeedImgs();
   }
 
   // ===== 灯箱 =====
@@ -324,12 +293,75 @@
     requestAnimationFrame(() => lb.classList.add('on'));
   }
 
-  // ===== 任务2: 状态隔离 —— 详情页使用 localCmtCols =====
-  async function openDetail(post) {
+  // ===== 帖号引用检测器 =====
+  function linkifyRefs(text) {
+    // 匹配 # + 7位数字
+    return text.replace(/#(\d{7})/g, '<span class="ha-ref" data-pid="$1" onmouseenter="window._haRefHover(this)" onclick="window._haRefClick(event, this)">#$1</span>');
+  }
+
+  // 悬停预览（300ms延迟）
+  window._haRefHover = async function(el) {
+    const pid = el.dataset.pid;
+    const timer = setTimeout(async () => {
+      try {
+        const post = await TreeholeAPI.getPost(parseInt(pid));
+        const preview = document.createElement('div');
+        preview.className = 'ha-ref-preview';
+        preview.innerHTML = `
+          <div class="ha-ref-preview-hd">
+            <span class="ha-pid">#${post.pid}</span>
+            <span class="ha-tm">${post.time}</span>
+          </div>
+          <div class="ha-ref-preview-bd">${esc(post.content?.substring(0, 200))}</div>
+          <div class="ha-ref-preview-cmt">💬 ${post.comment_num} ⭐ ${post.like_num}</div>`;
+        el.appendChild(preview);
+        el._preview = preview;
+        el._timer = timer;
+      } catch (e) {}
+    }, 300);
+    el._timer = timer;
+  };
+
+  // 鼠标离开取消预览
+  document.addEventListener('mouseleave', e => {
+    const ref = e.target.closest('.ha-ref');
+    if (ref) {
+      clearTimeout(ref._timer);
+      ref._preview?.remove();
+    }
+  }, true);
+
+  // 点击跳转（带栈）
+  window._haRefClick = async function(e, el) {
+    e.preventDefault();
+    e.stopPropagation();
+    clearTimeout(el._timer);
+    el._preview?.remove();
+    const pid = parseInt(el.dataset.pid);
+    try {
+      const post = await TreeholeAPI.getPost(pid);
+      openDetail(post, true); // true = fromRef
+    } catch (err) {}
+  };
+
+  // ===== 详情页 =====
+  async function openDetail(post, fromRef = false) {
+    if (fromRef) {
+      // 从引用跳转，当前帖子入栈
+      const currentDetail = $('#ha-detail');
+      if (currentDetail) {
+        const currentPid = parseInt(currentDetail.querySelector('h1')?.textContent?.replace('#', ''));
+        if (currentPid) postStack.push(currentPid);
+      }
+    } else {
+      postStack = []; // 从首页进入，清空栈
+    }
+
     const detail = document.createElement('div');
     detail.id = 'ha-detail';
     let localCmtCols = parseInt(localStorage.getItem('ha-cmt-cols') || '2');
-    // 任务: 用户颜色映射（每个详情页独立）
+
+    // 用户颜色映射
     const userColorMap = {};
     const palette = ['#4CAF50','#2196F3','#FF9800','#9C27B0','#E91E63','#00BCD4','#795548','#607D8B','#F44336','#3F51B5'];
     function userColor(name) {
@@ -339,14 +371,24 @@
       userColorMap[name] = palette[Math.abs(h) % palette.length];
       return userColorMap[name];
     }
+
     detail.innerHTML = detailHTML(post, localCmtCols);
     detail.style.opacity = '0';
     document.body.appendChild(detail);
     requestAnimationFrame(() => { detail.style.opacity = '1'; });
 
+    // 返回按钮（栈式返回）
     detail.querySelector('.ha-back').onclick = () => {
-      detail.style.opacity = '0';
-      setTimeout(() => detail.remove(), 250);
+      if (postStack.length > 0) {
+        // 返回上一个帖子
+        const prevPid = postStack.pop();
+        detail.remove();
+        TreeholeAPI.getPost(prevPid).then(p => openDetail(p, true));
+      } else {
+        // 返回首页
+        detail.style.opacity = '0';
+        setTimeout(() => detail.remove(), 250);
+      }
     };
 
     // 图片
@@ -367,7 +409,7 @@
       if (box.requestFullscreen) box.requestFullscreen();
     };
 
-    // 任务2: 评论栏数 — 局部作用域
+    // 评论栏数
     const cmtColsSlider = detail.querySelector('#ha-cmt-cols');
     const cmtGrid = detail.querySelector('#ha-d-cmts');
     if (cmtColsSlider) {
@@ -382,38 +424,35 @@
       };
     }
 
-    // 任务5: 评论加载 — 骨架屏 + 滚动锁
+    // ===== 评论加载（时间+拓扑双模式）=====
     let cmtPage = 1, cmtLoading = false, cmtHasMore = true;
+    let cmtViewMode = 'time'; // 'time' | 'thread'
+    let allComments = [];
     const cmtScroll = detail.querySelector('.ha-d-right');
     const cmtLoadEl = detail.querySelector('.ha-cmt-load');
+
+    // 视图切换按钮
+    const toggleBtn = detail.querySelector('#ha-cmt-toggle');
+    if (toggleBtn) {
+      toggleBtn.onclick = () => {
+        cmtViewMode = cmtViewMode === 'time' ? 'thread' : 'time';
+        toggleBtn.textContent = cmtViewMode === 'time' ? '🧵 拓扑' : '⏱ 时间';
+        toggleBtn.title = cmtViewMode === 'time' ? '切换到拓扑视图' : '切换到时间视图';
+        renderComments(cmtGrid, allComments, cmtViewMode, userColor);
+      };
+    }
 
     async function loadCmts(page) {
       if (cmtLoading || !cmtHasMore) return;
       cmtLoading = true;
       if (cmtLoadEl) cmtLoadEl.textContent = '加载中...';
-      // 任务5: 插入骨架屏
-      if (page === 1) {
-        cmtGrid.innerHTML = `<div class="ha-skeleton"><div class="sk-line"></div></div><div class="ha-skeleton"><div class="sk-line"></div></div><div class="ha-skeleton"><div class="sk-line"></div></div>`;
-      }
+      if (page === 1) cmtGrid.innerHTML = `<div class="ha-skeleton"><div class="sk-line"></div></div><div class="ha-skeleton"><div class="sk-line"></div></div>`;
       try {
-        const { comments, hasMore } = await TreeholeAPI.getComments(post.pid, page, 15);
+        const { comments, hasMore } = await TreeholeAPI.getComments(post.pid, page, 20);
         cmtHasMore = hasMore;
-        if (page === 1) cmtGrid.innerHTML = '';
-        comments.forEach(cm => {
-          // 用户颜色（同一用户同一颜色）
-          const color = userColor(cm.name_tag || '匿名');
-          cmtGrid.insertAdjacentHTML('beforeend', `
-            <div class="ha-cmt${cm.is_lz ? ' ha-cmt-lz' : ''}">
-              <div class="ha-cmt-hd">
-                <span class="ha-cmt-id">#${cm.id}</span>
-                <span class="ha-cmt-user" style="color:${color}">${esc(cm.name_tag || '匿名')}</span>
-                <span class="ha-cmt-tm">${cm.time}</span>
-                ${cm.is_lz ? '<span class="ha-tag">楼主</span>' : ''}
-              </div>
-              ${cm.reply_to ? `<div class="ha-cmt-reply">↩ 回复 <a href="#cmt-${cm.reply_to}">#${cm.reply_to}</a></div>` : ''}
-              <div class="ha-cmt-bd">${esc(cm.content)}</div>
-            </div>`);
-        });
+        if (page === 1) allComments = [];
+        allComments = allComments.concat(comments);
+        renderComments(cmtGrid, allComments, cmtViewMode, userColor);
         if (cmtLoadEl) cmtLoadEl.textContent = hasMore ? '滚动加载更多' : '没有更多了';
       } catch (e) {
         if (page === 1) cmtGrid.innerHTML = '<div class="ha-msg ha-err">评论加载失败</div>';
@@ -424,7 +463,6 @@
 
     loadCmts(1);
 
-    // 任务5: 滚动锁优化
     cmtScroll.addEventListener('scroll', () => {
       if (cmtLoading || !cmtHasMore) return;
       const { scrollTop, scrollHeight, clientHeight } = cmtScroll;
@@ -433,6 +471,64 @@
         loadCmts(cmtPage);
       }
     });
+  }
+
+  // ===== 渲染评论（支持时间/拓扑两种模式）=====
+  function renderComments(container, comments, mode, userColor) {
+    if (mode === 'thread') {
+      renderThread(container, comments, userColor);
+    } else {
+      renderTimeOrder(container, comments, userColor);
+    }
+  }
+
+  function renderTimeOrder(container, comments, userColor) {
+    container.innerHTML = '';
+    comments.forEach(cm => {
+      container.insertAdjacentHTML('beforeend', commentCard(cm, userColor));
+    });
+  }
+
+  // ===== 拓扑视图：主评论 + 回复嵌套 =====
+  function renderThread(container, comments, userColor) {
+    container.innerHTML = '';
+    const map = {};
+    comments.forEach(cm => { map[cm.id] = { ...cm, children: [] }; });
+    const roots = [];
+    comments.forEach(cm => {
+      if (cm.reply_to && map[cm.reply_to]) {
+        map[cm.reply_to].children.push(map[cm.id]);
+      } else {
+        roots.push(map[cm.id]);
+      }
+    });
+    // 渲染主评论 + 递归渲染回复
+    roots.forEach(cm => {
+      container.insertAdjacentHTML('beforeend', commentCard(cm, userColor));
+      if (cm.children.length > 0) {
+        const replyWrap = document.createElement('div');
+        replyWrap.className = 'ha-cmt-replies';
+        cm.children.forEach(child => {
+          replyWrap.insertAdjacentHTML('beforeend', commentCard(child, userColor, true));
+        });
+        container.appendChild(replyWrap);
+      }
+    });
+  }
+
+  function commentCard(cm, userColor, isReply = false) {
+    const color = userColor(cm.name_tag || '匿名');
+    return `
+      <div class="ha-cmt${cm.is_lz ? ' ha-cmt-lz' : ''}${isReply ? ' ha-cmt-reply-card' : ''}">
+        <div class="ha-cmt-hd">
+          <span class="ha-cmt-id">#${cm.id}</span>
+          <span class="ha-cmt-user" style="color:${color}">${esc(cm.name_tag || '匿名')}</span>
+          <span class="ha-cmt-tm">${cm.time}</span>
+          ${cm.is_lz ? '<span class="ha-tag">楼主</span>' : ''}
+        </div>
+        ${cm.reply_to ? `<div class="ha-cmt-reply-to">↩ 回复 <a class="ha-ref" data-comment-id="${cm.reply_to}">#${cm.reply_to}</a></div>` : ''}
+        <div class="ha-cmt-bd">${linkifyRefs(esc(cm.content))}</div>
+      </div>`;
   }
 
   function detailHTML(post, localCmtCols) {
@@ -449,7 +545,7 @@
           <div class="ha-tool" title="评论栏数"><input type="range" id="ha-cmt-cols" min="1" max="4" value="${localCmtCols}"><span id="ha-cmt-cols-val">${localCmtCols}</span></div>
         </div>
         <div class="ha-d-content">
-          <div class="ha-d-text">${esc(post.content)}</div>
+          <div class="ha-d-text">${linkifyRefs(esc(post.content))}</div>
           <div class="ha-d-imgs" id="ha-d-imgs"></div>
         </div>
         <div class="ha-d-meta">
@@ -460,7 +556,10 @@
         </div>
       </div>
       <div class="ha-d-right">
-        <div class="ha-d-r-hd">💬 评论 (${post.comment_num})</div>
+        <div class="ha-d-r-hd">
+          <span>💬 评论 (${post.comment_num})</span>
+          <button id="ha-cmt-toggle" class="ha-cmt-toggle" title="切换到拓扑视图">🧵 拓扑</button>
+        </div>
         <div class="ha-cmt-grid" id="ha-d-cmts" style="--ha-cmt-cols:${localCmtCols}"></div>
         <div class="ha-cmt-load">加载中...</div>
       </div>
@@ -492,7 +591,6 @@
     </div>`;
   }
 
-  // ===== CSS (含任务3/4/5) =====
   const CSS = `
     :root{--ha-accent:#4CAF50;--ha-bg:#f5f5f5;--ha-card:#fff;--ha-text:#333;--ha-sub:#666;--ha-muted:#999;--ha-border:#e0e0e0;--ha-hover:0 4px 16px rgba(0,0,0,.1);--ha-cols:3}
     .ha-dark{--ha-bg:#1a1a2e;--ha-card:#16213e;--ha-text:#e0e0e0;--ha-sub:#aaa;--ha-muted:#777;--ha-border:#333;--ha-hover:0 4px 16px rgba(0,0,0,.3)}
@@ -520,12 +618,10 @@
     .ha-masonry{columns:var(--ha-cols,3);column-gap:12px}
     .ha-masonry .ha-card{break-inside:avoid}
 
-    /* 任务3: 入场动画 + 任务4: 阴影升级 + 点击触感 */
     @keyframes haFadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
     .ha-card{background:var(--ha-card);border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);border:1px solid transparent;cursor:pointer;transition:transform .12s,box-shadow .2s,border-color .2s;animation:haFadeUp .25s ease-out forwards;opacity:0}
     .ha-card:hover{box-shadow:0 8px 25px rgba(0,0,0,.08);border-color:var(--ha-border)}
     .ha-card:active{transform:scale(0.98)}
-
     .ha-card-hd{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
     .ha-pid{font-weight:700;color:var(--ha-accent);font-size:14px}
     .ha-tm{color:var(--ha-muted);font-size:12px}
@@ -537,13 +633,18 @@
     .ha-card-ft{display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid var(--ha-border);color:var(--ha-sub);font-size:13px}
     .ha-msg{text-align:center;padding:40px;color:var(--ha-muted);font-size:14px}
     .ha-err{color:#f44336}
-
-    /* 任务5: 骨架屏 */
     .ha-skeleton{background:var(--ha-card);border-radius:10px;padding:16px;margin-bottom:12px;animation:sk-pulse 1.5s ease-in-out infinite}
     .sk-line{height:14px;background:var(--ha-border);border-radius:4px;margin-bottom:8px;width:100%}
-    .sk-short{width:60%}
-    .sk-tiny{width:30%}
+    .sk-short{width:60%}.sk-tiny{width:30%}
     @keyframes sk-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* 帖号引用 */
+    .ha-ref{color:var(--ha-accent);font-weight:600;cursor:pointer;position:relative;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+    .ha-ref:hover{color:var(--ha-accent);text-decoration-style:solid}
+    .ha-ref-preview{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:320px;background:var(--ha-card);border:1px solid var(--ha-border);border-radius:8px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.15);z-index:99999;pointer-events:none;animation:haFadeUp .15s ease-out}
+    .ha-ref-preview-hd{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+    .ha-ref-preview-bd{font-size:13px;line-height:1.5;color:var(--ha-text);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+    .ha-ref-preview-cmt{font-size:11px;color:var(--ha-muted);margin-top:6px}
 
     .ha-lb{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.92);z-index:99999999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
     .ha-lb.on{opacity:1}
@@ -567,16 +668,22 @@
     .ha-d-meta{margin-top:16px;background:var(--ha-bg);border-radius:8px;padding:14px 16px}
     .ha-d-meta-row{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;color:var(--ha-sub);border-bottom:1px solid var(--ha-border)}
     .ha-d-meta-row:last-child{border-bottom:none}
-    .ha-d-r-hd{font-size:16px;font-weight:600;color:var(--ha-text);padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--ha-border)}
+
+    /* 评论区 */
+    .ha-d-r-hd{font-size:16px;font-weight:600;color:var(--ha-text);padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--ha-border);display:flex;align-items:center;justify-content:space-between}
+    .ha-cmt-toggle{padding:4px 10px;border:1px solid var(--ha-border);border-radius:12px;background:var(--ha-card);cursor:pointer;font-size:12px;color:var(--ha-sub);transition:all .12s}
+    .ha-cmt-toggle:hover{border-color:var(--ha-accent);color:var(--ha-accent)}
     .ha-cmt-grid{display:grid;grid-template-columns:repeat(var(--ha-cmt-cols,2),1fr);gap:10px}
     .ha-cmt{background:var(--ha-card);border-radius:8px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--ha-border)}
     .ha-cmt-lz{border-left-color:var(--ha-accent)}
+    .ha-cmt-reply-card{margin-left:16px;border-left-color:var(--ha-muted);opacity:.9;font-size:13px}
+    .ha-cmt-replies{margin-left:8px;padding-left:12px;border-left:2px solid var(--ha-border)}
     .ha-cmt-hd{display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap}
     .ha-cmt-id{font-weight:700;color:var(--ha-muted);font-size:11px;font-family:monospace}
     .ha-cmt-user{font-weight:600;font-size:13px}
     .ha-cmt-tm{color:var(--ha-muted);font-size:11px}
-    .ha-cmt-reply{font-size:11px;color:var(--ha-muted);margin-bottom:4px}
-    .ha-cmt-reply a{color:var(--ha-accent);text-decoration:none}
+    .ha-cmt-reply-to{font-size:11px;color:var(--ha-muted);margin-bottom:4px}
+    .ha-cmt-reply-to a{color:var(--ha-accent);text-decoration:none}
     .ha-cmt-bd{font-size:14px;color:var(--ha-text);line-height:1.55}
     .ha-cmt-load{text-align:center;padding:18px;color:var(--ha-muted);font-size:13px}
 
