@@ -32,6 +32,7 @@
     document.body.insertAdjacentHTML('beforeend', buildHTML());
     bindEvents();
     initFeedObserver();
+    initRefHandlers();
     loadTabPosts(1);
   }
 
@@ -295,54 +296,58 @@
 
   // ===== 帖号引用检测器 =====
   function linkifyRefs(text) {
-    // 匹配 # + 7位数字
-    return text.replace(/#(\d{7})/g, '<span class="ha-ref" data-pid="$1" onmouseenter="window._haRefHover(this)" onclick="window._haRefClick(event, this)">#$1</span>');
+    return text.replace(/#(\d{7})/g, '<span class="ha-ref" data-pid="$1">#$1</span>');
   }
 
-  // 悬停预览（300ms延迟）
-  window._haRefHover = async function(el) {
-    const pid = el.dataset.pid;
-    const timer = setTimeout(async () => {
-      try {
-        const post = await TreeholeAPI.getPost(parseInt(pid));
-        const preview = document.createElement('div');
-        preview.className = 'ha-ref-preview';
-        preview.innerHTML = `
-          <div class="ha-ref-preview-hd">
-            <span class="ha-pid">#${post.pid}</span>
-            <span class="ha-tm">${post.time}</span>
-          </div>
-          <div class="ha-ref-preview-bd">${esc(post.content?.substring(0, 200))}</div>
-          <div class="ha-ref-preview-cmt">💬 ${post.comment_num} ⭐ ${post.like_num}</div>`;
-        el.appendChild(preview);
-        el._preview = preview;
-        el._timer = timer;
-      } catch (e) {}
-    }, 300);
-    el._timer = timer;
-  };
+  // 事件委托：统一处理引用的悬停和点击
+  function initRefHandlers() {
+    // 悬停预览
+    document.addEventListener('mouseenter', e => {
+      const ref = e.target.closest('.ha-ref');
+      if (!ref) return;
+      const pid = ref.dataset.pid;
+      ref._timer = setTimeout(async () => {
+        try {
+          const post = await TreeholeAPI.getPost(parseInt(pid));
+          const preview = document.createElement('div');
+          preview.className = 'ha-ref-preview';
+          preview.innerHTML = `
+            <div class="ha-ref-preview-hd">
+              <span class="ha-pid">#${post.pid}</span>
+              <span class="ha-tm">${post.time}</span>
+            </div>
+            <div class="ha-ref-preview-bd">${esc(post.content?.substring(0, 200))}</div>
+            <div class="ha-ref-preview-cmt">💬 ${post.comment_num} ⭐ ${post.like_num}</div>`;
+          ref.appendChild(preview);
+          ref._preview = preview;
+        } catch (e) {}
+      }, 300);
+    }, true);
 
-  // 鼠标离开取消预览
-  document.addEventListener('mouseleave', e => {
-    const ref = e.target.closest('.ha-ref');
-    if (ref) {
+    // 鼠标离开取消预览
+    document.addEventListener('mouseleave', e => {
+      const ref = e.target.closest('.ha-ref');
+      if (ref) {
+        clearTimeout(ref._timer);
+        ref._preview?.remove();
+        ref._preview = null;
+      }
+    }, true);
+
+    // 点击跳转
+    document.addEventListener('click', e => {
+      const ref = e.target.closest('.ha-ref');
+      if (!ref) return;
+      e.preventDefault();
+      e.stopPropagation();
       clearTimeout(ref._timer);
       ref._preview?.remove();
-    }
-  }, true);
-
-  // 点击跳转（带栈）
-  window._haRefClick = async function(e, el) {
-    e.preventDefault();
-    e.stopPropagation();
-    clearTimeout(el._timer);
-    el._preview?.remove();
-    const pid = parseInt(el.dataset.pid);
-    try {
-      const post = await TreeholeAPI.getPost(pid);
-      openDetail(post, true); // true = fromRef
-    } catch (err) {}
-  };
+      const pid = parseInt(ref.dataset.pid);
+      if (pid) {
+        TreeholeAPI.getPost(pid).then(post => openDetail(post, true)).catch(() => {});
+      }
+    }, true);
+  }
 
   // ===== 详情页 =====
   async function openDetail(post, fromRef = false) {
