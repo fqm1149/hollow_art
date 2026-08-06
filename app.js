@@ -529,7 +529,7 @@
     });
   }
 
-  // ===== 拓扑视图：主评论 + 回复嵌套 =====
+  // ===== 拓扑视图：主评论 + 扁平化回复串 =====
   function renderThread(container, comments, userColor) {
     container.innerHTML = '';
     const map = {};
@@ -542,15 +542,27 @@
         roots.push(map[cm.id]);
       }
     });
-    // 渲染：每个主评论+回复包裹为一个 grid item
+    // BFS 收集所有后代（扁平化，不递归嵌套）
+    function collectAll(node) {
+      const result = [];
+      const queue = [...node.children];
+      while (queue.length) {
+        const child = queue.shift();
+        result.push(child);
+        queue.push(...child.children);
+      }
+      return result;
+    }
+    // 渲染：每个主评论+回复串包裹为一个 grid item
     roots.forEach(cm => {
       const threadWrap = document.createElement('div');
       threadWrap.className = 'ha-cmt-thread';
       threadWrap.insertAdjacentHTML('beforeend', commentCard(cm, userColor));
-      if (cm.children.length > 0) {
+      const all = collectAll(cm);
+      if (all.length > 0) {
         const replyWrap = document.createElement('div');
         replyWrap.className = 'ha-cmt-replies';
-        cm.children.forEach(child => {
+        all.forEach(child => {
           replyWrap.insertAdjacentHTML('beforeend', commentCard(child, userColor, true));
         });
         threadWrap.appendChild(replyWrap);
