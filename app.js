@@ -380,13 +380,14 @@
 
   // ===== 详情页 =====
   async function openDetail(post, fromRef = false) {
+    // 移除旧 detail（防止残留）
+    const oldDetail = $('#ha-detail');
+    if (oldDetail) oldDetail.remove();
+
     if (fromRef) {
       // 从引用跳转，当前帖子入栈
-      const currentDetail = $('#ha-detail');
-      if (currentDetail) {
-        const currentPid = parseInt(currentDetail.querySelector('h1')?.textContent?.replace('#', ''));
-        if (currentPid) postStack.push(currentPid);
-      }
+      const currentPid = parseInt(oldDetail?.querySelector('h1')?.textContent?.replace('#', ''));
+      if (currentPid) postStack.push(currentPid);
     } else {
       postStack = []; // 从首页进入，清空栈
     }
@@ -420,8 +421,7 @@
         TreeholeAPI.getPost(prevPid).then(p => openDetail(p, false));
       } else {
         // 返回首页
-        detail.style.opacity = '0';
-        setTimeout(() => detail.remove(), 250);
+        detail.remove();
       }
     };
 
