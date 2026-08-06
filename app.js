@@ -11,6 +11,7 @@
 
   let curPage = 1, loading = false;
   let curTab = 'latest';
+  let searchMode = false, searchQuery = '';
   let view = localStorage.getItem('ha-v') || 'masonry';
   let cols = parseInt(localStorage.getItem('ha-cols') || '3');
   let accent = localStorage.getItem('ha-accent') || '#4CAF50';
@@ -128,15 +129,38 @@
     $$('.ha-tab').forEach(x => x.classList.remove('ha-on'));
     $('.ha-tab').classList.add('ha-on');
     curTab = 'latest';
+    searchMode = false;
+    searchQuery = '';
     curPage = 1;
     loadTabPosts(1);
   }
 
   // ===== Tab 路由 =====
   async function loadTabPosts(page) {
+    if (searchMode) return loadSearchResults(page);
     if (curTab === 'followed') return loadFollowed(page);
     if (curTab === 'bounty') return loadBounty(page);
     return loadPosts(page);
+  }
+
+  async function loadSearchResults(page) {
+    if (loading) return; loading = true;
+    const c = $('#ha-feed');
+    if (!c) { loading = false; return; }
+    if (page === 1) { c.style.opacity = '0'; c.innerHTML = skeleton(); }
+    try {
+      const { posts, hasMore } = await TreeholeAPI.search(searchQuery, page, 20);
+      if (page === 1) c.innerHTML = '';
+      if (posts.length === 0 && page === 1) {
+        c.innerHTML = '<div class="ha-msg">无结果</div>';
+      } else {
+        renderFeed(posts);
+        curPage = page;
+        insertSentinel(c, hasMore);
+      }
+      c.style.opacity = '1';
+    } catch (e) { c.innerHTML = `<div class="ha-msg ha-err">${e.message}</div>`; c.style.opacity = '1'; }
+    loading = false;
   }
 
   // ===== 任务3: 入场动画 + 任务5: 骨架屏 =====
@@ -214,15 +238,10 @@
   }
 
   async function searchPosts(q) {
-    const c = $('#ha-feed');
-    c.style.opacity = '0';
-    c.innerHTML = skeleton();
-    try {
-      const { posts } = await TreeholeAPI.search(q, 1, 30);
-      c.innerHTML = '';
-      posts.length ? renderFeed(posts) : (c.innerHTML = '<div class="ha-msg">无结果</div>');
-      c.style.opacity = '1';
-    } catch (e) { c.innerHTML = `<div class="ha-msg ha-err">${e.message}</div>`; c.style.opacity = '1'; }
+    searchMode = true;
+    searchQuery = q;
+    curPage = 1;
+    await loadSearchResults(1);
   }
 
   // ===== 任务3: Stagger 入场动画 =====
