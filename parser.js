@@ -1,5 +1,5 @@
 /**
- * 树洞数据解析器 v6.0 - 正确处理两种 API 格式
+ * 树洞数据解析器 v7.2
  * 
  * API 格式：
  *   list_comments → { list: [hole, hole, ...], total }
