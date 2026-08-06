@@ -415,13 +415,19 @@
     // 返回按钮（栈式返回）
     detail.querySelector('.ha-back').onclick = () => {
       if (postStack.length > 0) {
-        // 返回上一个帖子（不入栈）
+        // 返回上一个帖子：先淡出旧detail，等新detail就绪后再移除
         const prevPid = postStack.pop();
-        detail.remove();
-        TreeholeAPI.getPost(prevPid).then(p => openDetail(p, false));
+        detail.style.transition = 'opacity .2s';
+        detail.style.opacity = '0';
+        TreeholeAPI.getPost(prevPid).then(p => {
+          detail.remove();
+          openDetail(p, false);
+        });
       } else {
-        // 返回首页
-        detail.remove();
+        // 返回首页：淡出
+        detail.style.transition = 'opacity .2s';
+        detail.style.opacity = '0';
+        setTimeout(() => detail.remove(), 200);
       }
     };
 
@@ -536,17 +542,20 @@
         roots.push(map[cm.id]);
       }
     });
-    // 渲染主评论 + 递归渲染回复
+    // 渲染：每个主评论+回复包裹为一个 grid item
     roots.forEach(cm => {
-      container.insertAdjacentHTML('beforeend', commentCard(cm, userColor));
+      const threadWrap = document.createElement('div');
+      threadWrap.className = 'ha-cmt-thread';
+      threadWrap.insertAdjacentHTML('beforeend', commentCard(cm, userColor));
       if (cm.children.length > 0) {
         const replyWrap = document.createElement('div');
         replyWrap.className = 'ha-cmt-replies';
         cm.children.forEach(child => {
           replyWrap.insertAdjacentHTML('beforeend', commentCard(child, userColor, true));
         });
-        container.appendChild(replyWrap);
+        threadWrap.appendChild(replyWrap);
       }
+      container.appendChild(threadWrap);
     });
   }
 
@@ -708,6 +717,7 @@
     .ha-cmt-toggle{padding:4px 10px;border:1px solid var(--ha-border);border-radius:12px;background:var(--ha-card);cursor:pointer;font-size:12px;color:var(--ha-sub);transition:all .12s}
     .ha-cmt-toggle:hover{border-color:var(--ha-accent);color:var(--ha-accent)}
     .ha-cmt-grid{display:grid;grid-template-columns:repeat(var(--ha-cmt-cols,2),1fr);gap:10px}
+    .ha-cmt-thread{break-inside:avoid}
     .ha-cmt{background:var(--ha-card);border-radius:8px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:3px solid var(--ha-border)}
     .ha-cmt-lz{border-left-color:var(--ha-accent)}
     .ha-cmt-reply-card{margin-left:16px;border-left-color:var(--ha-muted);opacity:.9;font-size:13px}
