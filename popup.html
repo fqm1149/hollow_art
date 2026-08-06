@@ -4,31 +4,40 @@
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { width: 300px; font-family: -apple-system, system-ui, sans-serif; background: #fff; color: #333; }
-    .header { background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white; padding: 16px; text-align: center; }
-    .header h1 { font-size: 16px; }
-    .header p { font-size: 12px; opacity: .8; margin-top: 4px; }
-    .section { padding: 12px 16px; }
-    .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
-    .row label { font-size: 14px; }
-    .toggle { position: relative; width: 40px; height: 22px; background: #ddd; border-radius: 11px; cursor: pointer; transition: background .2s; }
-    .toggle.on { background: #4CAF50; }
-    .toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
-    .toggle.on::after { transform: translateX(18px); }
-    .ver { text-align: center; padding: 8px; font-size: 11px; color: #ccc; }
+    body { width: 320px; font-family: -apple-system, system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
+    .header { background: linear-gradient(135deg, #1a7f37, #238636); color: white; padding: 20px; text-align: center; }
+    .header h1 { font-size: 18px; letter-spacing: .5px; }
+    .header p { font-size: 12px; opacity: .85; margin-top: 4px; }
+    .body { padding: 16px 20px; }
+    .step { display: flex; gap: 12px; margin-bottom: 16px; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; background: #238636; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+    .step-text { font-size: 13px; line-height: 1.6; color: #c9d1d9; }
+    .step-text strong { color: #e6edf3; }
+    .warn { background: #1c1e24; border: 1px solid #f0883e44; border-radius: 8px; padding: 10px 14px; margin-top: 4px; font-size: 12px; color: #f0883e; line-height: 1.6; }
+    .warn::before { content: '⚠️ '; }
+    .footer { text-align: center; padding: 10px; font-size: 11px; color: #484f58; border-top: 1px solid #21262d; }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>🌳 Hollow Art</h1>
-    <p>v0.1.0 - 树洞重绘</p>
+    <p>v1.0.0 · 树洞重绘</p>
   </div>
-  <div class="section">
-    <div class="row">
-      <label>启用新 UI</label>
-      <div class="toggle on" id="enabled"></div>
+  <div class="body">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">打开 <strong>treehole.pku.edu.cn</strong> 并登录</div>
     </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">登录成功后，回到此弹窗 <strong>启用插件</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">刷新树洞页面，即可使用 Hollow Art</div>
+    </div>
+    <div class="warn">未登录时请<strong>禁用</strong>插件，否则页面会出错。登录后再<strong>启用</strong>。</div>
   </div>
-  <div class="ver">Made with ❤️ for PKU</div>
+  <div class="footer">Made with ❤️ for PKU</div>
 </body>
 </html>
