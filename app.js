@@ -42,6 +42,15 @@
     feedObserver = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && !loading) loadMore();
     }, { rootMargin: '0px 0px 200px 0px' });
+
+    // 鼠标滚轮映射水平滚动（瀑布流模式）
+    document.addEventListener('wheel', e => {
+      if (view !== 'masonry') return;
+      const feed = $('#ha-feed');
+      if (!feed || feed.scrollWidth <= feed.clientWidth) return;
+      e.preventDefault();
+      feed.scrollLeft += e.deltaY;
+    }, { passive: false });
   }
 
   function observeSentinel() {
@@ -296,8 +305,17 @@
   async function openDetail(post) {
     const detail = document.createElement('div');
     detail.id = 'ha-detail';
-    // 任务2: 局部变量，不污染全局
     let localCmtCols = parseInt(localStorage.getItem('ha-cmt-cols') || '2');
+    // 任务: 用户颜色映射（每个详情页独立）
+    const userColorMap = {};
+    const palette = ['#4CAF50','#2196F3','#FF9800','#9C27B0','#E91E63','#00BCD4','#795548','#607D8B','#F44336','#3F51B5'];
+    function userColor(name) {
+      if (userColorMap[name]) return userColorMap[name];
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+      userColorMap[name] = palette[Math.abs(h) % palette.length];
+      return userColorMap[name];
+    }
     detail.innerHTML = detailHTML(post, localCmtCols);
     detail.style.opacity = '0';
     document.body.appendChild(detail);
@@ -359,14 +377,13 @@
         cmtHasMore = hasMore;
         if (page === 1) cmtGrid.innerHTML = '';
         comments.forEach(cm => {
-          // 任务4: 评论用户颜色
-          const colorIdx = (cm.id || 0) % 5;
-          const colors = ['#4CAF50','#2196F3','#FF9800','#9C27B0','#E91E63'];
+          // 用户颜色（同一用户同一颜色）
+          const color = userColor(cm.name_tag || '匿名');
           cmtGrid.insertAdjacentHTML('beforeend', `
             <div class="ha-cmt${cm.is_lz ? ' ha-cmt-lz' : ''}">
               <div class="ha-cmt-hd">
                 <span class="ha-cmt-id">#${cm.id}</span>
-                <span class="ha-cmt-user" style="color:${colors[colorIdx]}">${esc(cm.name_tag || '匿名')}</span>
+                <span class="ha-cmt-user" style="color:${color}">${esc(cm.name_tag || '匿名')}</span>
                 <span class="ha-cmt-tm">${cm.time}</span>
                 ${cm.is_lz ? '<span class="ha-tag">楼主</span>' : ''}
               </div>
