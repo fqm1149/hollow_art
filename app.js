@@ -460,17 +460,15 @@
 
     // 收藏按钮
     const starBtn = detail.querySelector('#ha-star-btn');
-    let starred = false;
-    let starCount = post.like_num || 0;
     if (starBtn) {
       starBtn.onclick = async () => {
         starBtn.disabled = true;
         try {
-          const result = await TreeholeAPI.attention(post.pid);
-          starred = !starred;
-          starCount += starred ? 1 : -1;
-          starBtn.textContent = (starred ? '★ ' : '☆ ') + starCount;
-          starBtn.title = starred ? '取消收藏' : '收藏';
+          await TreeholeAPI.attention(post.pid);
+          post.is_follow = !post.is_follow;
+          post.like_num += post.is_follow ? 1 : -1;
+          starBtn.textContent = (post.is_follow ? '★ ' : '☆ ') + post.like_num;
+          starBtn.title = post.is_follow ? '取消收藏' : '收藏';
         } catch (e) {
           console.error('收藏失败:', e);
         }
@@ -626,7 +624,7 @@
       <div class="ha-d-left">
         <div class="ha-d-top-bar">
           <button class="ha-d-fs-btn" title="全屏">⛶</button>
-          <button class="ha-d-star-btn" id="ha-star-btn" title="收藏">☆ ${post.like_num}</button>
+          <button class="ha-d-star-btn" id="ha-star-btn" title="${post.is_follow ? '取消收藏' : '收藏'}">${post.is_follow ? '★' : '☆'} ${post.like_num}</button>
           <div class="ha-tool" title="评论栏数"><input type="range" id="ha-cmt-cols" min="1" max="4" value="${localCmtCols}"><span id="ha-cmt-cols-val">${localCmtCols}</span></div>
         </div>
         <div class="ha-d-content">
@@ -636,7 +634,7 @@
         <div class="ha-d-meta">
           <div class="ha-d-meta-row"><span>发布时间</span><span>${post.timestamp ? new Date(post.timestamp).toLocaleString('zh-CN') : post.time}</span></div>
           <div class="ha-d-meta-row"><span>💬 评论</span><span>${post.comment_num}</span></div>
-          <div class="ha-d-meta-row"><span>⭐ 收藏</span><span>${post.like_num}</span></div>
+          <div class="ha-d-meta-row"><span>${post.is_follow ? '★' : '⭐'} 收藏</span><span>${post.like_num}</span></div>
           <div class="ha-d-meta-row"><span>PID</span><span>${post.pid}</span></div>
         </div>
       </div>

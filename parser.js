@@ -145,7 +145,7 @@
       tags: parseTags(h.tags_info, h.tags_ids),
       images: parseMediaIds(h.media_ids),
       anonymous: h.anonymous === 1,
-      is_follow: h.is_follow === 1,
+      is_follow: !!h.is_follow,
       is_top: h.is_top === 1,
       fold: h.fold || 0,
       preview_comments: Array.isArray(h.comment_list)
