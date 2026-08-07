@@ -282,7 +282,7 @@
         ${imgs}
         <div class="ha-card-ft">
           <span>💬 ${post.comment_num}</span>
-          <span>⭐ ${post.like_num}</span>
+          <span>${post.is_follow ? '★' : '☆'} ${post.like_num}</span>
         </div>`;
       el.onclick = e => { if (!e.target.closest('.ha-img') && !e.target.closest('.ha-ref')) openDetail(post); };
       frag.appendChild(el);

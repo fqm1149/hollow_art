@@ -119,6 +119,11 @@
   async function getNavigation() { return await request(`${BASE}/navigation-items/list`, { page: 1, limit: 1000 }); }
   async function getUserConfig(type = 2) { return await request(`${BASE}/user_config/get`, { type }); }
   async function getUnreadMessages(type = 'int_msg') { return await request(`${BASE}/message/un_read`, { message_type: type }); }
+  async function getMessages(type = 'int_msg', page = 1, limit = 20) {
+    const data = await request(`${BASE}/message/index`, { message_type: type, page, limit });
+    const items = data.list || [];
+    return { messages: items, total: data.total || 0, page, hasMore: items.length === limit };
+  }
   async function getExclusiveIds() { return await request(`${BASE}/exclusive_id/list`); }
   async function getBlockingWords() { return await request(`${BASE}/person_blocking_words/index`); }
   async function getReminders(page = 1, limit = 1000) { return await request(`${BASE}/reminder/list`, { page, limit }); }
@@ -270,7 +275,7 @@
     getPosts, getPost, getComments, search, getFollowed, getBounty,
     getImage, getThumbnail, getImages,
     getTags, getNavigation, getUserConfig,
-    getUnreadMessages, getExclusiveIds, getBlockingWords, getReminders, getUserInfo,
+    getUnreadMessages, getMessages, getExclusiveIds, getBlockingWords, getReminders, getUserInfo,
     attention,
     version: '7.2.0'
   };
