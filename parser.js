@@ -45,6 +45,20 @@
     return data.data;
   }
 
+  async function postRequest(endpoint, body = {}) {
+    const url = new URL(endpoint, window.location.origin);
+    const resp = await fetch(url.toString(), {
+      method: 'POST',
+      credentials: 'include',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data.success === false) throw new Error(data.message || `code ${data.code}`);
+    return data.data;
+  }
+
   // ===== getPosts: list_comments 返回扁平 hole =====
   async function getPosts(page = 1, limit = 10) {
     const data = await request(`${BASE}/hole/list_comments`, {
@@ -109,6 +123,11 @@
   async function getBlockingWords() { return await request(`${BASE}/person_blocking_words/index`); }
   async function getReminders(page = 1, limit = 1000) { return await request(`${BASE}/reminder/list`, { page, limit }); }
   async function getUserInfo() { return await request(`${BASE}/users/info`); }
+
+  // ===== 写入操作 =====
+  async function attention(pid) {
+    return await postRequest(`${BASE}/hole/attention`, { pid });
+  }
 
   // ===== wrapHole: 扁平 hole 对象 → 标准 Post =====
   function wrapHole(h) {
@@ -252,7 +271,8 @@
     getImage, getThumbnail, getImages,
     getTags, getNavigation, getUserConfig,
     getUnreadMessages, getExclusiveIds, getBlockingWords, getReminders, getUserInfo,
-    version: '7.1.0'
+    attention,
+    version: '7.2.0'
   };
-  console.log('[Treehole Parser v7.1] Loaded');
+  console.log('[Treehole Parser v7.2] Loaded');
 })();
