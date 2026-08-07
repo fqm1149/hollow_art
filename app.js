@@ -337,6 +337,7 @@
 
     // 悬停预览
     document.addEventListener('mouseenter', e => {
+      if (!(e.target instanceof Element)) return;
       const ref = e.target.closest('.ha-ref');
       if (!ref) return;
       const pid = ref.dataset.pid;
@@ -362,6 +363,7 @@
 
     // 鼠标离开取消预览
     document.addEventListener('mouseleave', e => {
+      if (!(e.target instanceof Element)) return;
       const ref = e.target.closest('.ha-ref');
       if (ref) {
         clearTimeout(ref._timer);
@@ -455,6 +457,26 @@
       const box = detail.querySelector('.ha-d-content');
       if (box.requestFullscreen) box.requestFullscreen();
     };
+
+    // 收藏按钮
+    const starBtn = detail.querySelector('#ha-star-btn');
+    let starred = false;
+    let starCount = post.like_num || 0;
+    if (starBtn) {
+      starBtn.onclick = async () => {
+        starBtn.disabled = true;
+        try {
+          const result = await TreeholeAPI.attention(post.pid);
+          starred = !starred;
+          starCount += starred ? 1 : -1;
+          starBtn.textContent = (starred ? '★ ' : '☆ ') + starCount;
+          starBtn.title = starred ? '取消收藏' : '收藏';
+        } catch (e) {
+          console.error('收藏失败:', e);
+        }
+        starBtn.disabled = false;
+      };
+    }
 
     // 评论栏数
     const cmtColsSlider = detail.querySelector('#ha-cmt-cols');
@@ -604,6 +626,7 @@
       <div class="ha-d-left">
         <div class="ha-d-top-bar">
           <button class="ha-d-fs-btn" title="全屏">⛶</button>
+          <button class="ha-d-star-btn" id="ha-star-btn" title="收藏">☆ ${post.like_num}</button>
           <div class="ha-tool" title="评论栏数"><input type="range" id="ha-cmt-cols" min="1" max="4" value="${localCmtCols}"><span id="ha-cmt-cols-val">${localCmtCols}</span></div>
         </div>
         <div class="ha-d-content">
@@ -723,6 +746,8 @@
     .ha-d-top-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
     .ha-d-fs-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ha-border);border-radius:6px;background:var(--ha-card);cursor:pointer;font-size:15px;color:var(--ha-sub)}
     .ha-d-fs-btn:hover{background:var(--ha-bg);color:var(--ha-text)}
+    .ha-d-star-btn{padding:4px 10px;border:1px solid var(--ha-border);border-radius:6px;background:var(--ha-card);cursor:pointer;font-size:13px;color:var(--ha-sub);transition:all .15s}
+    .ha-d-star-btn:hover{border-color:#f59e0b;color:#f59e0b}
     .ha-d-content{background:var(--ha-card);border-radius:10px;border:1px solid var(--ha-border);padding:20px}
     .ha-d-text{font-size:16px;line-height:1.8;color:var(--ha-text);white-space:pre-wrap;word-break:break-word}
     .ha-d-imgs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
