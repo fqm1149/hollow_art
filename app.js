@@ -144,6 +144,7 @@
     if (searchMode) return loadSearchResults(page);
     if (curTab === 'followed') return loadFollowed(page);
     if (curTab === 'bounty') return loadBounty(page);
+    if (curTab === 'messages') return loadMessages(page);
     return loadPosts(page);
   }
 
@@ -166,6 +167,84 @@
     } catch (e) { c.innerHTML = `<div class="ha-msg ha-err">${e.message}</div>`; c.style.opacity = '1'; }
     loading = false;
   }
+
+  // ===== 消息 =====
+  let msgType = 'int_msg'; // 'int_msg' | 'sys_msg'
+
+  function messageCard(msg) {
+    const t = msgType;
+    if (t === 'int_msg') {
+      const hole = msg.body?.hole_info;
+      const comment = msg.body?.comment_info;
+      const time = msg.created_at || '';
+      const readClass = msg.is_read ? '' : 'ha-msg-unread';
+      const snippet = (msg.contents || '').substring(0, 120);
+      const holeSnippet = hole?.text ? `<div class="ha-msg-hole">#${hole.pid} ${esc(hole.text.substring(0, 60))}</div>` : '';
+      return `<div class="ha-msg-card ${readClass}" data-pid="${msg.pid || ''}">
+        <div class="ha-msg-hd">
+          <span class="ha-msg-time">${time}</span>
+          ${msg.is_read ? '' : '<span class="ha-msg-dot"></span>'}
+        </div>
+        <div class="ha-msg-bd">${esc(snippet)}</div>
+        ${holeSnippet}
+      </div>`;
+    } else {
+      const time = msg.timestamp ? new Date(msg.timestamp * 1000).toLocaleString('zh-CN') : '';
+      const readClass = msg.hasread ? '' : 'ha-msg-unread';
+      return `<div class="ha-msg-card ${readClass}">
+        <div class="ha-msg-hd">
+          <span class="ha-msg-time">${time}</span>
+          ${msg.emergency ? '<span class="ha-msg-urgent">紧急</span>' : ''}
+          ${msg.hasread ? '' : '<span class="ha-msg-dot"></span>'}
+        </div>
+        <div class="ha-msg-bd">${esc((msg.content || '').substring(0, 200))}</div>
+        ${msg.link ? `<div class="ha-msg-link"><a href="${esc(msg.link)}" target="_blank">查看链接</a></div>` : ''}
+      </div>`;
+    }
+  }
+
+  async function loadMessages(page) {
+    if (loading) return; loading = true;
+    const c = $('#ha-feed');
+    if (!c) { loading = false; return; }
+    if (page === 1) { c.style.opacity = '0'; c.innerHTML = skeleton(3); }
+    try {
+      const { messages, hasMore } = await TreeholeAPI.getMessages(msgType, page, 20);
+      if (page === 1) c.innerHTML = '';
+      // 消息类型切换按钮
+      if (page === 1) {
+        const switcher = document.createElement('div');
+        switcher.className = 'ha-msg-switcher';
+        switcher.innerHTML = `
+          <button class="ha-msg-type ${msgType === 'int_msg' ? 'ha-on' : ''}" data-mtype="int_msg">💬 互动消息</button>
+          <button class="ha-msg-type ${msgType === 'sys_msg' ? 'ha-on' : ''}" data-mtype="sys_msg">📢 系统消息</button>
+        `;
+        c.appendChild(switcher);
+        switcher.querySelectorAll('.ha-msg-type').forEach(btn => {
+          btn.onclick = () => {
+            msgType = btn.dataset.mtype;
+            loadMessages(1);
+          };
+        });
+      }
+      if (messages.length === 0 && page === 1) {
+        c.innerHTML += '<div class="ha-msg">暂无消息</div>';
+      } else {
+        const frag = document.createDocumentFragment();
+        messages.forEach(msg => {
+          const div = document.createElement('div');
+          div.innerHTML = messageCard(msg);
+          frag.appendChild(div.firstElementChild);
+        });
+        c.appendChild(frag);
+      }
+      c.style.opacity = '1';
+      hasMoreMsg = hasMore;
+    } catch (e) { c.innerHTML = `<div class="ha-msg ha-err">${e.message}</div>`; c.style.opacity = '1'; }
+    loading = false;
+  }
+
+  let hasMoreMsg = true;
 
   function skeleton(n = 6) {
     return Array(n).fill('<div class="ha-skeleton"><div class="sk-line"></div><div class="sk-line sk-short"></div><div class="sk-line sk-tiny"></div></div>').join('');
@@ -324,7 +403,11 @@
 
   // ===== 帖号引用检测器 =====
   function linkifyRefs(text) {
-    return text.replace(/#(\d{7})/g, '<span class="ha-ref" data-pid="$1">#$1</span>');
+    // 匹配 #7位数字 或 独立的7位数字（前后非数字）
+    return text.replace(/(?:#(\d{7})|(?<!\d)(\d{7})(?!\d))/g, (match, p1, p2) => {
+      const pid = p1 || p2;
+      return `<span class="ha-ref" data-pid="${pid}">#${pid}</span>`;
+    });
   }
 
   // 事件委托：统一处理引用的悬停和点击
@@ -660,6 +743,7 @@
           <button class="ha-tab ha-on" data-tab="latest">最新</button>
           <button class="ha-tab" data-tab="followed">关注</button>
           <button class="ha-tab" data-tab="bounty">悬赏</button>
+          <button class="ha-tab" data-tab="messages">💬 消息</button>
         </nav>
         <button id="ha-view-btn" title="切换视图"><span id="ha-view-icon">${view === 'masonry' ? '▦' : '▤'}</span></button>
         <div class="ha-tool" title="栏数 (${cols})"><input type="range" id="ha-cols" min="1" max="5" value="${cols}"><span id="ha-cols-val">${cols}</span></div>
@@ -715,6 +799,21 @@
     .ha-img{width:110px;height:110px;border-radius:6px;object-fit:cover;background:var(--ha-bg);cursor:pointer}
     .ha-card-ft{display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid var(--ha-border);color:var(--ha-sub);font-size:13px}
     .ha-msg{text-align:center;padding:40px;color:var(--ha-muted);font-size:14px}
+    .ha-msg-switcher{display:flex;gap:8px;padding:0 0 14px}
+    .ha-msg-type{padding:5px 14px;border:1px solid var(--ha-border);border-radius:14px;background:var(--ha-card);cursor:pointer;font-size:13px;color:var(--ha-sub);transition:all .12s}
+    .ha-msg-type:hover{border-color:var(--ha-accent);color:var(--ha-accent)}
+    .ha-msg-type.ha-on{background:var(--ha-accent);color:#fff;border-color:var(--ha-accent)}
+    .ha-msg-card{background:var(--ha-card);border:1px solid var(--ha-border);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+    .ha-msg-card:hover{border-color:var(--ha-accent)}
+    .ha-msg-card.ha-msg-unread{border-left:3px solid var(--ha-accent)}
+    .ha-msg-hd{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+    .ha-msg-time{font-size:12px;color:var(--ha-muted)}
+    .ha-msg-dot{width:8px;height:8px;background:var(--ha-accent);border-radius:50%;flex-shrink:0}
+    .ha-msg-urgent{font-size:11px;color:#ef4444;font-weight:600}
+    .ha-msg-bd{font-size:14px;color:var(--ha-text);line-height:1.5}
+    .ha-msg-hole{font-size:12px;color:var(--ha-muted);margin-top:6px;padding:4px 8px;background:var(--ha-bg);border-radius:6px}
+    .ha-msg-link{margin-top:6px;font-size:12px}
+    .ha-msg-link a{color:var(--ha-accent);text-decoration:none}
     .ha-err{color:#f44336}
     .ha-skeleton{background:var(--ha-card);border-radius:10px;padding:16px;margin-bottom:12px;animation:sk-pulse 1.5s ease-in-out infinite}
     .sk-line{height:14px;background:var(--ha-border);border-radius:4px;margin-bottom:8px;width:100%}
