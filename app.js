@@ -124,7 +124,8 @@
   function updateFeedClass() {
     const feed = $('#ha-feed');
     if (!feed) return;
-    feed.className = view === 'masonry' ? 'ha-feed ha-masonry' : 'ha-feed';
+    const isMsg = curTab === 'messages';
+    feed.className = 'ha-feed' + (isMsg ? ' ha-msg-mode' : (view === 'masonry' ? ' ha-masonry' : ''));
     feed.style.setProperty('--ha-cols', cols);
   }
 
@@ -784,6 +785,7 @@
     .ha-feed{flex:1;overflow-y:auto;padding:16px 20px}
     .ha-masonry{columns:var(--ha-cols,3);column-gap:12px}
     .ha-masonry .ha-card{break-inside:avoid}
+    .ha-msg-mode{display:flex;flex-direction:column;max-width:700px;margin:0 auto}
 
     @keyframes haFadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
     .ha-card{background:var(--ha-card);border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);border:1px solid transparent;cursor:pointer;transition:transform .12s,box-shadow .2s,border-color .2s;animation:haFadeUp .25s ease-out forwards;opacity:0}
